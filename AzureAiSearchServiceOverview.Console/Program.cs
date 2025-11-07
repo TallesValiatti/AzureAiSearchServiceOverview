@@ -1,11 +1,16 @@
 ﻿using AzureAiSearchServiceOverview.Console.Models;
 using AzureAiSearchServiceOverview.Console.Services;
+using System.Text.Json;
+using Azure.Search.Documents.Agents.Models;
 
 // Full-text search
 // await RunFullTextSearchExamplesAsync();
 
 // Vector search
-await RunVectorSearchExamplesAsync();
+// await RunVectorSearchExamplesAsync();
+
+// Agent search
+await RunAgentSearchExamplesAsync();
 
 return;
 
@@ -89,5 +94,61 @@ static async Task RunVectorSearchExamplesAsync()
         foreach (var job in jobs)
             Console.WriteLine(
                 $"- {job.Score} | {job.Document.Name} | ${job.Document.Salary:N0} | {job.Document.Description}");
+    }
+}
+
+static async Task RunAgentSearchExamplesAsync()
+{
+    var searchEndpoint = "<AZURE-SEARCH-ENDPOINT>";
+    var searchKey = "<AZURE-SEARCH-ADMIN-KEY>";
+    var aiEndpoint = new Uri("<AZURE-AI-INFERENCE-ENDPOINT>");
+    var aiApiKey = "<AZURE-AI-FOUNDATION-API-KEY>";
+    var aiFoundryEndpoint = "<AZURE-AI-FOUNDRY-ENDPOINT>";
+    var aiFoundryEmbeddingsDeployment = "text-embedding-3-small";
+    var aiFoundryModelDeployment = "gpt-4o-mini";
+    var embeddingModel = "text-embedding-3-small";
+
+    var embeddings = new EmbeddingsService(aiEndpoint, aiApiKey, embeddingModel);
+    
+    var service = new AgentSearchService(
+        searchEndpoint, 
+        searchKey, 
+        embeddings, 
+        aiFoundryEndpoint, 
+        aiFoundryEmbeddingsDeployment, 
+        aiFoundryModelDeployment);
+
+    await service.InitializeAsync();
+
+    // Query: Agent search example
+    var agentResults = await service.AgentSearchAsync(
+        "What are the best paying jobs related to Azure and AI?");
+
+    Console.WriteLine("\n-- Agent Search Results --");
+    Console.WriteLine("\nResponse:");
+    Console.WriteLine((agentResults.Response[0].Content[0] as KnowledgeAgentMessageTextContent)?.Text);
+    
+    Console.WriteLine("\nActivity:");
+    foreach (var activity in agentResults.Activity)
+    {
+        Console.WriteLine($"Activity Type: {activity.GetType().Name}");
+        string activityJson = JsonSerializer.Serialize(
+            activity,
+            activity.GetType(),
+            new JsonSerializerOptions { WriteIndented = true }
+        );
+        Console.WriteLine(activityJson);
+    }
+
+    Console.WriteLine("\nResults:");
+    foreach (var reference in agentResults.References)
+    {
+        Console.WriteLine($"Reference Type: {reference.GetType().Name}");
+        string referenceJson = JsonSerializer.Serialize(
+            reference,
+            reference.GetType(),
+            new JsonSerializerOptions { WriteIndented = true }
+        );
+        Console.WriteLine(referenceJson);
     }
 }

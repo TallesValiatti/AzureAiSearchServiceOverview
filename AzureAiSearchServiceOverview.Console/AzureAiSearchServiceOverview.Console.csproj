@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.AI.Inference" Version="1.0.0-beta.5" />
     <PackageReference Include="Azure.Identity" Version="1.17.0" />
-    <PackageReference Include="Azure.Search.Documents" Version="11.6.1" />
+    <PackageReference Include="Azure.Search.Documents" Version="11.7.0-beta.7" />
   </ItemGroup>
 
 </Project>
