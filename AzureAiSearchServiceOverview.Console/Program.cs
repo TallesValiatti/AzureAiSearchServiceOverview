@@ -98,7 +98,6 @@ static async Task RunVectorSearchExamplesAsync()
 
 static async Task RunAgenticSearchExamplesAsync()
 {
-    
     var searchEndpoint = "<AZURE-SEARCH-ENDPOINT>";
     var searchKey = "<AZURE-SEARCH-ADMIN-KEY>";
     var aoaiEndpoint = "<AZURE-OPENAI-ENDPOINT>";
@@ -129,9 +128,9 @@ static async Task RunAgenticSearchExamplesAsync()
     Print(result1);
 
     // Query 2: Simple query targeting the Price field with a filter concept
-    // Expected: Should return cars under $80,000 like BMW M3 Competition and Ford Mustang Mach-E GT
+    // Expected: Should return cars under $80,000 like BMW M3 Competition, Rivian R1T, and Ford Mustang Mach-E GT
     // Demonstrates: Semantic understanding of price ranges
-    var result2 = await service.AgenticRetrievalAsync("What cars are available under $80,000?");
+    var result2 = await service.AgenticRetrievalAsync("List all cars that are priced under $80,000. Include the price and key features of each car.");
     Console.WriteLine("\n-- Query 2: Price range search (under $80,000) --");
     Print(result2);
 
@@ -143,14 +142,14 @@ static async Task RunAgenticSearchExamplesAsync()
     Print(result3);
 
     // Query 4: Complex multi-part query combining Model, Price, and Description
-    // Expected: Should identify Porsche Taycan Turbo S and Mercedes-AMG GT 63 S, comparing their
-    //           performance specs (horsepower, acceleration), luxury features, and prices
-    // Demonstrates: Agent's ability to decompose complex queries, search multiple fields,
-    //               synthesize results, and provide comparative analysis
+    // Expected: Should find electric cars between $80K-$100K (only Tesla Model S Plaid at $89,990)
+    //           and provide its specs: 0-60 time (1.99s), range (396 miles), horsepower, and features
+    // Demonstrates: Agent's ability to combine price filtering with feature requirements,
+    //               synthesize multiple data points, and provide comprehensive answers
     var result4 = await service.AgenticRetrievalAsync(
-        "Compare the most expensive luxury performance cars. What are their horsepower ratings, " +
-        "acceleration times, and key luxury features? Which one offers the best performance per dollar?");
-    Console.WriteLine("\n-- Query 4: Complex multi-field comparison query --");
+        "What electric cars are available between $80,000 and $100,000? " +
+        "For each one, tell me the 0-60 mph time, range, and key performance features.");
+    Console.WriteLine("\n-- Query 4: Complex multi-criteria query (electric + price range + specs) --");
     Print(result4);
     return;
 
@@ -160,16 +159,11 @@ static async Task RunAgenticSearchExamplesAsync()
         var refIdToModel = new Dictionary<string, string>();
         foreach (var reference in response.References)
         {
-            if (reference is KnowledgeAgentSearchIndexReference searchRef)
+            if (reference is not KnowledgeAgentSearchIndexReference searchRef) continue;
+            if (searchRef.SourceData == null) continue;
+            if (searchRef.SourceData is IDictionary<string, object> sourceDict && sourceDict.ContainsKey("Model"))
             {
-                if (searchRef.SourceData != null)
-                {
-                    var sourceDict = searchRef.SourceData as System.Collections.Generic.IDictionary<string, object>;
-                    if (sourceDict != null && sourceDict.ContainsKey("Model"))
-                    {
-                        refIdToModel[searchRef.Id] = sourceDict["Model"]?.ToString() ?? "";
-                    }
-                }
+                refIdToModel[searchRef.Id] = sourceDict["Model"]?.ToString() ?? "";
             }
         }
 
@@ -193,10 +187,10 @@ static async Task RunAgenticSearchExamplesAsync()
                 Console.WriteLine($"  - DocKey: {searchRef.DocKey} | Score: {searchRef.RerankerScore:F2}");
                 if (searchRef.SourceData != null)
                 {
-                    var sourceDict = searchRef.SourceData as System.Collections.Generic.IDictionary<string, object>;
-                    if (sourceDict != null && sourceDict.ContainsKey("Model"))
+                    if (searchRef.SourceData is IDictionary<string, object> sourceDict && sourceDict.ContainsKey("Model"))
                     {
-                        Console.WriteLine($"    Model: {sourceDict["Model"]}");
+                        var price = sourceDict.ContainsKey("Price") ? $" | Price: ${sourceDict["Price"]}" : "";
+                        Console.WriteLine($"    Model: {sourceDict["Model"]}{price}");
                     }
                 }
             }

@@ -58,7 +58,12 @@ public class AgenticSearchService(
                         name: "semantic_config",
                         prioritizedFields: new SemanticPrioritizedFields
                         {
-                            ContentFields = { new SemanticField(nameof(Car.Description)) }
+                            TitleField = new SemanticField(nameof(Car.Model)),
+                            ContentFields =
+                            {
+                                new SemanticField(nameof(Car.Description)),
+                                new SemanticField(nameof(Car.Model))
+                            }
                         })
                 }
             }
@@ -88,7 +93,7 @@ public class AgenticSearchService(
             name: KnowledgeSourceName,
             searchIndexParameters: new SearchIndexKnowledgeSourceParameters(searchIndexName: IndexName)
             {
-                SourceDataSelect = $"{nameof(Car.Id)},{nameof(Car.Model)},{nameof(Car.Description)}"
+                SourceDataSelect = $"{nameof(Car.Id)},{nameof(Car.Model)},{nameof(Car.Price)},{nameof(Car.Description)}",
             }
         );
 
@@ -119,7 +124,8 @@ public class AgenticSearchService(
                 new KnowledgeSourceReference(KnowledgeSourceName)
                 {
                     IncludeReferences = true,
-                    IncludeReferenceSourceData = true
+                    IncludeReferenceSourceData = true,
+                    RerankerThreshold = 1.8f
                 }
             ]
         )

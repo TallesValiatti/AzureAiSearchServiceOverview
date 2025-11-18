@@ -10,6 +10,8 @@ public class Car
     [SearchableField(IsFilterable = true, IsSortable = true)]
     public string Model { get; set; } = string.Empty;
 
+    [SimpleField(IsFilterable = true, IsSortable = true, IsFacetable = true)]
+    public double Price { get; set; }
 
     [SearchableField]
     public string Description { get; set; } = string.Empty;
@@ -20,4 +22,3 @@ public class Car
     )]
     public float[] DescriptionVector { get; set; } = [];
 }
-
