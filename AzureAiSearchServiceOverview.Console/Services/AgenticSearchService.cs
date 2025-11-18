@@ -121,7 +121,7 @@ public class AgenticSearchService(
                 {
                     IncludeReferences = true,
                     IncludeReferenceSourceData = true,
-                    RerankerThreshold = 2.5f
+                    RerankerThreshold = 2.0f
                 }
             ]
         )
@@ -143,15 +143,10 @@ public class AgenticSearchService(
             credential: _searchCredential
         );
 
-        string systemMessage = @"A Q&A agent that can answer questions about high-performance cars.
-            If you don't have the answer, respond with ""I don't know"".";
-
+        // Note: System message is not included in the retrieval request
+        // It would be used for conversation context in a full chat implementation
         var messages = new List<KnowledgeAgentMessage>
         {
-            new(content: [new KnowledgeAgentMessageTextContent(systemMessage)])
-            {
-                Role = "system"
-            },
             new(content: [new KnowledgeAgentMessageTextContent(query)])
             {
                 Role = "user"
