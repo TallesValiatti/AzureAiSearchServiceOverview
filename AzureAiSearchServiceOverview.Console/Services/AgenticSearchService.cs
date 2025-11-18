@@ -20,9 +20,9 @@ public class AgenticSearchService(
     EmbeddingsService embeddings)
 {
     private readonly AzureKeyCredential _searchCredential = new(searchApiKey);
-    private const string IndexName = "cars";
-    private const string KnowledgeSourceName = "car-knowledge-source";
-    private const string KnowledgeAgentName = "car-knowledge-agent";
+    private const string IndexName = "cars-info";
+    private const string KnowledgeSourceName = "car-info-knowledge-source";
+    private const string KnowledgeAgentName = "car-info-knowledge-agent";
 
     private SearchIndexClient CreateIndexClient() => new(new Uri(searchEndpoint), _searchCredential);
     private SearchClient CreateSearchClient() => new(new Uri(searchEndpoint), IndexName, _searchCredential);
@@ -34,7 +34,6 @@ public class AgenticSearchService(
         await SeedAsync(CreateSearchClient(), ct);
         await EnsureKnowledgeInfrastructureAsync(indexClient, ct);
     }
-
     private async Task CreateOrUpdateIndexAsync(SearchIndexClient indexClient, CancellationToken ct)
     {
         // Build from attributes
@@ -89,7 +88,7 @@ public class AgenticSearchService(
             name: KnowledgeSourceName,
             searchIndexParameters: new SearchIndexKnowledgeSourceParameters(searchIndexName: IndexName)
             {
-                SourceDataSelect = $"{nameof(Car.Id)},{nameof(Car.Model)},{nameof(Car.Price)},{nameof(Car.Description)}"
+                SourceDataSelect = $"{nameof(Car.Id)},{nameof(Car.Model)},{nameof(Car.Description)}"
             }
         );
 
@@ -120,8 +119,7 @@ public class AgenticSearchService(
                 new KnowledgeSourceReference(KnowledgeSourceName)
                 {
                     IncludeReferences = true,
-                    IncludeReferenceSourceData = true,
-                    RerankerThreshold = 2.0f
+                    IncludeReferenceSourceData = true
                 }
             ]
         )

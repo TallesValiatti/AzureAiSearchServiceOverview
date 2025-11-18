@@ -98,6 +98,7 @@ static async Task RunVectorSearchExamplesAsync()
 
 static async Task RunAgenticSearchExamplesAsync()
 {
+    
     var searchEndpoint = "<AZURE-SEARCH-ENDPOINT>";
     var searchKey = "<AZURE-SEARCH-ADMIN-KEY>";
     var aoaiEndpoint = "<AZURE-OPENAI-ENDPOINT>";
@@ -120,35 +121,67 @@ static async Task RunAgenticSearchExamplesAsync()
 
     await service.InitializeAsync();
 
-    // query 1: Complex multi-part question about electric cars
-    var result1 = await service.AgenticRetrievalAsync(
-        "What are the best electric cars for performance and range? Compare their acceleration times and battery ranges.");
-    Console.WriteLine("\n-- Query 1: Best electric cars for performance and range --");
+    // Query 1: Simple query targeting the Model field
+    // Expected: Should find the Tesla Model S Plaid and describe its features
+    // Demonstrates: Basic semantic search on model names
+    var result1 = await service.AgenticRetrievalAsync("Tell me about the Tesla Model S");
+    Console.WriteLine("\n-- Query 1: Simple model search (Tesla Model S) --");
     Print(result1);
 
-    // query 2: Price comparison question
-    var result2 = await service.AgenticRetrievalAsync(
-        "Which luxury performance cars are available under $100,000? Include their key features and performance specs.");
-    Console.WriteLine("\n-- Query 2: Luxury performance cars under $100,000 --");
+    // Query 2: Simple query targeting the Price field with a filter concept
+    // Expected: Should return cars under $80,000 like BMW M3 Competition and Ford Mustang Mach-E GT
+    // Demonstrates: Semantic understanding of price ranges
+    var result2 = await service.AgenticRetrievalAsync("What cars are available under $80,000?");
+    Console.WriteLine("\n-- Query 2: Price range search (under $80,000) --");
     Print(result2);
 
-    // query 3: Specific feature query
-    var result3 = await service.AgenticRetrievalAsync(
-        "Which cars offer all-wheel drive with more than 600 horsepower? What makes them special?");
-    Console.WriteLine("\n-- Query 3: AWD cars with 600+ horsepower --");
+    // Query 3: Simple query targeting the Description field for specific features
+    // Expected: Should find electric vehicles like Tesla, Porsche Taycan, Lucid Air, Ford Mach-E, Rivian
+    // Demonstrates: Semantic search on technical specifications in descriptions
+    var result3 = await service.AgenticRetrievalAsync("Which cars are fully electric?");
+    Console.WriteLine("\n-- Query 3: Feature-based search (electric vehicles) --");
     Print(result3);
 
-    // query 4: Brand-specific comparison
+    // Query 4: Complex multi-part query combining Model, Price, and Description
+    // Expected: Should identify Porsche Taycan Turbo S and Mercedes-AMG GT 63 S, comparing their
+    //           performance specs (horsepower, acceleration), luxury features, and prices
+    // Demonstrates: Agent's ability to decompose complex queries, search multiple fields,
+    //               synthesize results, and provide comparative analysis
     var result4 = await service.AgenticRetrievalAsync(
-        "Compare the German performance vehicles in terms of power, technology, and price. Which one offers the best value?");
-    Console.WriteLine("\n-- Query 4: German performance vehicles comparison --");
+        "Compare the most expensive luxury performance cars. What are their horsepower ratings, " +
+        "acceleration times, and key luxury features? Which one offers the best performance per dollar?");
+    Console.WriteLine("\n-- Query 4: Complex multi-field comparison query --");
     Print(result4);
     return;
 
     static void Print(KnowledgeAgentRetrievalResponse response)
     {
-        // Print the response
-        var answerText = (response.Response[0].Content[0] as KnowledgeAgentMessageTextContent)?.Text;
+        // Build a mapping of ref_id to Model name
+        var refIdToModel = new Dictionary<string, string>();
+        foreach (var reference in response.References)
+        {
+            if (reference is KnowledgeAgentSearchIndexReference searchRef)
+            {
+                if (searchRef.SourceData != null)
+                {
+                    var sourceDict = searchRef.SourceData as System.Collections.Generic.IDictionary<string, object>;
+                    if (sourceDict != null && sourceDict.ContainsKey("Model"))
+                    {
+                        refIdToModel[searchRef.Id] = sourceDict["Model"]?.ToString() ?? "";
+                    }
+                }
+            }
+        }
+
+        // Get the answer text and replace ref_id with Model names
+        var answerText = (response.Response[0].Content[0] as KnowledgeAgentMessageTextContent)?.Text ?? "";
+        
+        // Replace all [ref_id:X] with the actual Model name
+        foreach (var kvp in refIdToModel)
+        {
+            answerText = answerText.Replace($"[ref_id:{kvp.Key}]", $"({kvp.Value})");
+        }
+        
         Console.WriteLine($"Answer: {answerText}\n");
 
         // Print references
@@ -163,7 +196,7 @@ static async Task RunAgenticSearchExamplesAsync()
                     var sourceDict = searchRef.SourceData as System.Collections.Generic.IDictionary<string, object>;
                     if (sourceDict != null && sourceDict.ContainsKey("Model"))
                     {
-                        Console.WriteLine($"    Model: {sourceDict["Model"]} | Price: {sourceDict["Price"]}");
+                        Console.WriteLine($"    Model: {sourceDict["Model"]}");
                     }
                 }
             }
