@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Azure;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Agents;
@@ -144,8 +143,15 @@ public class AgenticSearchService(
             credential: _searchCredential
         );
 
+        string systemMessage = @"A Q&A agent that can answer questions about high-performance cars.
+            If you don't have the answer, respond with ""I don't know"".";
+
         var messages = new List<KnowledgeAgentMessage>
         {
+            new(content: [new KnowledgeAgentMessageTextContent(systemMessage)])
+            {
+                Role = "system"
+            },
             new(content: [new KnowledgeAgentMessageTextContent(query)])
             {
                 Role = "user"
@@ -156,60 +162,6 @@ public class AgenticSearchService(
         var retrievalResult = await agentClient.RetrieveAsync(retrievalRequest, cancellationToken: ct);
 
         return retrievalResult.Value;
-    }
-
-    public async Task CleanupAsync(CancellationToken ct = default)
-    {
-        var indexClient = CreateIndexClient();
-
-        await indexClient.DeleteKnowledgeAgentAsync(KnowledgeAgentName, cancellationToken: ct);
-        System.Console.WriteLine($"Knowledge agent '{KnowledgeAgentName}' deleted successfully.");
-
-        await indexClient.DeleteKnowledgeSourceAsync(KnowledgeSourceName, cancellationToken: ct);
-        System.Console.WriteLine($"Knowledge source '{KnowledgeSourceName}' deleted successfully.");
-
-        await indexClient.DeleteIndexAsync(IndexName, cancellationToken: ct);
-        System.Console.WriteLine($"Index '{IndexName}' deleted successfully.");
-    }
-
-    public static void PrintResponse(KnowledgeAgentRetrievalResponse response)
-    {
-        // Print the response
-        System.Console.WriteLine("\n========================================");
-        System.Console.WriteLine("RESPONSE:");
-        System.Console.WriteLine("========================================");
-        System.Console.WriteLine((response.Response[0].Content[0] as KnowledgeAgentMessageTextContent)?.Text);
-
-        // Print activity
-        System.Console.WriteLine("\n========================================");
-        System.Console.WriteLine("ACTIVITY:");
-        System.Console.WriteLine("========================================");
-        foreach (var activity in response.Activity)
-        {
-            System.Console.WriteLine($"\nActivity Type: {activity.GetType().Name}");
-            string activityJson = JsonSerializer.Serialize(
-                activity,
-                activity.GetType(),
-                new JsonSerializerOptions { WriteIndented = true }
-            );
-            System.Console.WriteLine(activityJson);
-        }
-
-        // Print results
-        System.Console.WriteLine("\n========================================");
-        System.Console.WriteLine("RESULTS:");
-        System.Console.WriteLine("========================================");
-        foreach (var reference in response.References)
-        {
-            System.Console.WriteLine($"\nReference Type: {reference.GetType().Name}");
-            string referenceJson = JsonSerializer.Serialize(
-                reference,
-                reference.GetType(),
-                new JsonSerializerOptions { WriteIndented = true }
-            );
-            System.Console.WriteLine(referenceJson);
-        }
-        System.Console.WriteLine("\n========================================\n");
     }
 }
 

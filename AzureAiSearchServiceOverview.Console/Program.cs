@@ -1,6 +1,5 @@
 ﻿﻿using AzureAiSearchServiceOverview.Console.Models;
 using AzureAiSearchServiceOverview.Console.Services;
-using System.Text.Json;
 using Azure.Search.Documents.Agents.Models;
 
 // Full-text search
@@ -119,41 +118,57 @@ static async Task RunAgenticSearchExamplesAsync()
         aoaiDeployment,
         embeddings);
 
-    // Initialize index, seed data, and setup knowledge infrastructure
     await service.InitializeAsync();
 
-    Console.WriteLine("\n╔════════════════════════════════════════════════════════════════╗");
-    Console.WriteLine("║          AGENTIC RETRIEVAL - CAR SEARCH EXAMPLES              ║");
-    Console.WriteLine("╚════════════════════════════════════════════════════════════════╝\n");
-
-    // Query 1: Complex multi-part question about electric cars
-    Console.WriteLine("\n>>> Query 1: What are the best electric cars for performance and range?");
+    // query 1: Complex multi-part question about electric cars
     var result1 = await service.AgenticRetrievalAsync(
         "What are the best electric cars for performance and range? Compare their acceleration times and battery ranges.");
-    AgenticSearchService.PrintResponse(result1);
+    Console.WriteLine("\n-- Query 1: Best electric cars for performance and range --");
+    Print(result1);
 
-    // Query 2: Price comparison question
-    Console.WriteLine("\n>>> Query 2: Which luxury performance cars cost under $100,000?");
+    // query 2: Price comparison question
     var result2 = await service.AgenticRetrievalAsync(
         "Which luxury performance cars are available under $100,000? Include their key features and performance specs.");
-    AgenticSearchService.PrintResponse(result2);
+    Console.WriteLine("\n-- Query 2: Luxury performance cars under $100,000 --");
+    Print(result2);
 
-    // Query 3: Specific feature query
-    Console.WriteLine("\n>>> Query 3: Which cars have AWD and over 600 horsepower?");
+    // query 3: Specific feature query
     var result3 = await service.AgenticRetrievalAsync(
         "Which cars offer all-wheel drive with more than 600 horsepower? What makes them special?");
-    AgenticSearchService.PrintResponse(result3);
+    Console.WriteLine("\n-- Query 3: AWD cars with 600+ horsepower --");
+    Print(result3);
 
-    // Query 4: Brand-specific comparison
-    Console.WriteLine("\n>>> Query 4: Compare German performance vehicles");
+    // query 4: Brand-specific comparison
     var result4 = await service.AgenticRetrievalAsync(
         "Compare the German performance vehicles in terms of power, technology, and price. Which one offers the best value?");
-    AgenticSearchService.PrintResponse(result4);
+    Console.WriteLine("\n-- Query 4: German performance vehicles comparison --");
+    Print(result4);
+    return;
 
-    // Cleanup resources
-    Console.WriteLine("\n🧹 Cleaning up resources...");
-    await service.CleanupAsync();
-    
-    Console.WriteLine("\n✅ Agentic search examples completed successfully!");
+    static void Print(KnowledgeAgentRetrievalResponse response)
+    {
+        // Print the response
+        var answerText = (response.Response[0].Content[0] as KnowledgeAgentMessageTextContent)?.Text;
+        Console.WriteLine($"Answer: {answerText}\n");
+
+        // Print references
+        Console.WriteLine($"References ({response.References.Count}):");
+        foreach (var reference in response.References)
+        {
+            if (reference is KnowledgeAgentSearchIndexReference searchRef)
+            {
+                Console.WriteLine($"  - DocKey: {searchRef.DocKey} | Score: {searchRef.RerankerScore:F2}");
+                if (searchRef.SourceData != null)
+                {
+                    var sourceDict = searchRef.SourceData as System.Collections.Generic.IDictionary<string, object>;
+                    if (sourceDict != null && sourceDict.ContainsKey("Model"))
+                    {
+                        Console.WriteLine($"    Model: {sourceDict["Model"]} | Price: {sourceDict["Price"]}");
+                    }
+                }
+            }
+        }
+        Console.WriteLine();
+    }
 }
 
