@@ -102,8 +102,8 @@ static async Task RunAgenticSearchExamplesAsync()
     var searchKey = "<AZURE-SEARCH-ADMIN-KEY>";
     var aoaiEndpoint = "<AZURE-OPENAI-ENDPOINT>";
     var aoaiApiKey = "<AZURE-OPENAI-API-KEY>";
-    var aoaiModel = "gpt-4o";
-    var aoaiDeployment = "gpt-4o";
+    var aoaiModel = "gpt-4.1-mini";
+    var aoaiDeployment = "gpt-4.1-mini";
     var aiEndpoint = new Uri("<AZURE-AI-INFERENCE-ENDPOINT>");
     var aiApiKey = "<AZURE-AI-FOUNDATION-API-KEY>";
     var embeddingModel = "text-embedding-3-small";
